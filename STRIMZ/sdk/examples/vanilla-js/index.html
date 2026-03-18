@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strimz SDK - Vanilla JS Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      color: #333;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .pricing-card {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .pricing-card.featured {
+      border: 2px solid #6366f1;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #6366f1;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .description {
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .price {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 24px;
+    }
+
+    .price-period {
+      font-size: 16px;
+      color: #666;
+    }
+
+    .strimz-button {
+      width: 100%;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      background: #6366f1;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .strimz-button:hover {
+      background: #4f46e5;
+    }
+
+    .strimz-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .strimz-button.secondary {
+      background: #e5e7eb;
+      color: #333;
+    }
+
+    .error {
+      color: #ef4444;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Strimz Payment Example - Vanilla JS</h1>
+
+    <div class="pricing-grid">
+      <!-- Free Plan -->
+      <div class="pricing-card">
+        <h2>Free</h2>
+        <p class="description">Perfect for getting started</p>
+        <div class="price">$0</div>
+        <button class="strimz-button secondary" disabled>Current Plan</button>
+      </div>
+
+      <!-- Pro Plan -->
+      <div class="pricing-card">
+        <h2>Pro</h2>
+        <p class="description">One-time payment</p>
+        <div class="price">$49.99</div>
+        <button
+          class="strimz-button"
+          id="pro-button"
+          data-amount="4999"
+          data-type="one-time"
+        >
+          Buy Now - $49.99
+        </button>
+        <div id="pro-error" class="error"></div>
+      </div>
+
+      <!-- Premium Plan -->
+      <div class="pricing-card featured">
+        <span class="badge">Most Popular</span>
+        <h2>Premium</h2>
+        <p class="description">Monthly subscription</p>
+        <div class="price">
+          $29.99<span class="price-period">/mo</span>
+        </div>
+        <button
+          class="strimz-button"
+          id="premium-button"
+          data-amount="2999"
+          data-type="subscription"
+          data-interval="monthly"
+        >
+          Subscribe - $29.99/month
+        </button>
+        <div id="premium-error" class="error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load SDK from CDN (or use npm bundle) -->
+  <script type="module">
+    // Import from npm package (or use CDN)
+    import { StrimzSDK } from 'https://unpkg.com/@strimz/sdk@1.0.0/dist/index.js'
+
+    // Initialize SDK
+    const strimz = new StrimzSDK({
+      publicKey: 'STRZtest_your_public_key_here',
+      environment: 'test',
+      debug: true
+    })
+
+    // Handle Pro button
+    const proButton = document.getElementById('pro-button')
+    const proError = document.getElementById('pro-error')
+
+    proButton.addEventListener('click', async () => {
+      try {
+        proButton.disabled = true
+        proButton.textContent = 'Processing...'
+        proError.textContent = ''
+
+        await strimz.redirectToCheckout({
+          amount: 4999,
+          paymentType: 'one-time',
+          currency: 'USD',
+          successUrl: `${window.location.origin}/success.html`,
+          cancelUrl: window.location.href,
+          metadata: {
+            planId: 'pro_onetime',
+            planName: 'Pro Plan'
+          }
+        })
+      } catch (error) {
+        console.error('Payment error:', error)
+        proError.textContent = error.message
+        proButton.disabled = false
+        proButton.textContent = 'Buy Now - $49.99'
+      }
+    })
+
+    // Handle Premium button
+    const premiumButton = document.getElementById('premium-button')
+    const premiumError = document.getElementById('premium-error')
+
+    premiumButton.addEventListener('click', async () => {
+      try {
+        premiumButton.disabled = true
+        premiumButton.textContent = 'Processing...'
+        premiumError.textContent = ''
+
+        await strimz.redirectToCheckout({
+          amount: 2999,
+          paymentType: 'subscription',
+          interval: 'monthly',
+          currency: 'USD',
+          successUrl: `${window.location.origin}/success.html`,
+          cancelUrl: window.location.href,
+          metadata: {
+            planId: 'premium_monthly',
+            planName: 'Premium Plan'
+          }
+        })
+      } catch (error) {
+        console.error('Subscription error:', error)
+        premiumError.textContent = error.message
+        premiumButton.disabled = false
+        premiumButton.textContent = 'Subscribe - $29.99/month'
+      }
+    })
+  </script>
+</body>
+</html>

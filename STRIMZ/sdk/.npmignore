@@ -1,0 +1,39 @@
+# Source files
+src/
+
+# Configuration
+tsconfig.json
+vite.config.ts
+
+# Development
+node_modules/
+examples/
+.vscode/
+.idea/
+
+# Testing
+coverage/
+*.test.ts
+*.test.tsx
+**/__tests__/
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Documentation (keep README and LICENSE)
+CONTRIBUTING.md
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
