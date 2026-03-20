@@ -4,7 +4,7 @@ import { IoFilterSharp, IoSearchOutline } from 'react-icons/io5'
 import FilterDropdown from './FilterDropdown'
 import CustomerTable from './CustomerTable'
 import { sampleCustomers } from '@/utils/sampleCustomerData'
-import { CustomerFilterState, Customer } from '@/STRIMZ/types/customers'
+import { CustomerFilterState, Customer } from '@/types/customers'
 import { CUSTOMER_FILTER_OPTIONS } from './constants'
 import { matchesTotalSpentRange, matchesLastPaymentPeriod } from './utils'
 

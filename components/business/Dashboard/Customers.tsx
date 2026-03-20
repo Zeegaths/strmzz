@@ -1,29 +1,17 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { PiUsersLight } from "react-icons/pi";
+import { PiUsersLight } from "react-icons/pi"
+import { useQuery } from '@tanstack/react-query'
+import { apiGet } from '@/lib/api'
 
-
-interface CustomerLocation {
-    country: string
-    flag: string
-    count: number
-    amount: number
+interface Customer {
+    payer: string
+    totalSpent: number
+    paymentCount: number
+    firstPayment: string
+    lastPayment: string
 }
-
-// Sample customer data
-const customersByLocation: CustomerLocation[] = [
-    { country: 'Nigeria', flag: '🇳🇬', count: 45, amount: 900.00 },
-    { country: 'Argentina', flag: '🇦🇷', count: 32, amount: 640.00 },
-    { country: 'Denmark', flag: '🇩🇰', count: 20, amount: 400.00 },
-    { country: 'Belgium', flag: '🇧🇪', count: 13, amount: 260.00 },
-    { country: 'Italy', flag: '🇮🇹', count: 5, amount: 100.00 }
-]
-
-const customerTypeData = [
-    { name: 'Repeat', value: 24, color: '#02C76A' },
-    { name: 'First time', value: 52, color: '#01753E' }
-]
 
 const Customers = () => {
     const [mounted, setMounted] = useState(false)
@@ -32,37 +20,76 @@ const Customers = () => {
         setMounted(true)
     }, [])
 
+    const { data: custRes, isLoading } = useQuery({
+        queryKey: ['merchant-customers'],
+        queryFn: () => apiGet('/merchants/me/customers?limit=5'),
+    })
+
+    const customers: Customer[] = (custRes?.data?.rows || custRes?.message?.rows || []) as Customer[]
+    const totalCustomers = custRes?.data?.count || custRes?.message?.count || 0
+
+    // Calculate repeat vs first-time from data
+    const repeatCount = customers.filter(c => c.paymentCount > 1).length
+    const firstTimeCount = customers.filter(c => c.paymentCount === 1).length
+
+    const customerTypeData = [
+        { name: 'Repeat', value: repeatCount || 0, color: '#02C76A' },
+        { name: 'First time', value: firstTimeCount || 0, color: '#01753E' }
+    ]
+
+    const truncateAddress = (addr: string) => {
+        if (!addr) return '—'
+        return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+    }
+
     return (
         <section className='w-full flex flex-col gap-2'>
             <h3 className='text-[#050020] font-sora font-[600] md:text-xl text-lg'>Customers</h3>
 
             <main className='w-full grid lg:grid-cols-2 gap-4 lg:gap-4'>
-                {/* Customers by Location */}
+                {/* Customers List */}
                 <div className='w-full bg-white md:p-4 flex flex-col gap-4'>
-                    <h4 className='text-[#050020] font-[500] font-poppins text-sm'>Customers by location</h4>
+                    <h4 className='text-[#050020] font-[500] font-poppins text-sm'>
+                        Top customers {totalCustomers > 0 && `(${totalCustomers})`}
+                    </h4>
 
                     <div className='w-full flex flex-col'>
-                        {customersByLocation.map((location, index) => (
-                            <div
-                                key={index}
-                                className='w-full flex justify-between items-center py-1 border-b border-[#E5E7EB] last:border-b-0'
-                            >
-                                <div className='flex items-center md:gap-3 gap-2'>
-                                    <span className='text-2xl'>{location.flag}</span>
-                                    <span className='text-[#58556A] font-poppins font-[400] text-sm'>{location.country}</span>
+                        {isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className='w-full flex justify-between items-center py-1 border-b border-[#E5E7EB]'>
+                                    <span className='w-32 h-4 bg-gray-100 rounded animate-pulse' />
+                                    <span className='w-20 h-4 bg-gray-100 rounded animate-pulse' />
                                 </div>
-
-                                <div className='flex items-center md:gap-10 gap-6'>
-                                    <div className='flex items-center gap-1'>
-                                        <span className='text-[#58556A] font-poppins font-[400] text-sm'>{location.count}</span>
-                                        <PiUsersLight className='w-4 h-4 text-[#6B7280]' />
+                            ))
+                        ) : customers.length === 0 ? (
+                            <p className='text-[#58556A] font-poppins text-sm py-4 text-center'>No customers yet</p>
+                        ) : (
+                            customers.map((customer, index) => (
+                                <div
+                                    key={index}
+                                    className='w-full flex justify-between items-center py-1 border-b border-[#E5E7EB] last:border-b-0'
+                                >
+                                    <div className='flex items-center md:gap-3 gap-2'>
+                                        <span className='text-lg'>👤</span>
+                                        <span className='text-[#58556A] font-poppins font-[400] text-sm'>
+                                            {truncateAddress(customer.payer)}
+                                        </span>
                                     </div>
-                                    <span className='text-[#050020] font-poppins font-[500] text-sm '>
-                                        {location.amount.toFixed(2)} <span className='text-[#58556A] font-[400]'>USD</span>
-                                    </span>
+
+                                    <div className='flex items-center md:gap-10 gap-6'>
+                                        <div className='flex items-center gap-1'>
+                                            <span className='text-[#58556A] font-poppins font-[400] text-sm'>
+                                                {customer.paymentCount}
+                                            </span>
+                                            <PiUsersLight className='w-4 h-4 text-[#6B7280]' />
+                                        </div>
+                                        <span className='text-[#050020] font-poppins font-[500] text-sm'>
+                                            {Number(customer.totalSpent).toFixed(2)} <span className='text-[#58556A] font-[400]'>USDC</span>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -73,7 +100,7 @@ const Customers = () => {
                     <div className='flex items-center md:gap-8 gap-4'>
                         {/* Donut Chart */}
                         <div className='relative w-[180px] h-[180px] min-w-[180px]'>
-                            {mounted && (
+                            {mounted && (repeatCount > 0 || firstTimeCount > 0) ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -93,6 +120,10 @@ const Customers = () => {
                                         </Pie>
                                     </PieChart>
                                 </ResponsiveContainer>
+                            ) : (
+                                <div className='w-full h-full flex items-center justify-center'>
+                                    <p className='text-[#9CA3AF] font-poppins text-xs text-center'>No data yet</p>
+                                </div>
                             )}
                         </div>
 
@@ -103,7 +134,7 @@ const Customers = () => {
                                     <span className='w-3 h-3 rounded-sm bg-[#02C76A]' />
                                     <span className='text-[#58556A] font-poppins font-[400] text-sm'>Repeat</span>
                                 </div>
-                                <span className='text-[#050020] font-sora font-[500] text-sm'>{customerTypeData[0].value}</span>
+                                <span className='text-[#050020] font-sora font-[500] text-sm'>{repeatCount}</span>
                             </div>
 
                             <div className='flex items-center md:gap-6 gap-3'>
@@ -111,7 +142,7 @@ const Customers = () => {
                                     <span className='w-3 h-3 rounded-sm bg-[#01753E]' />
                                     <span className='text-[#58556A] font-poppins font-[400] text-sm'>First time</span>
                                 </div>
-                                <span className='text-[#050020] font-sora font-[500] text-sm'>{customerTypeData[1].value}</span>
+                                <span className='text-[#050020] font-sora font-[500] text-sm'>{firstTimeCount}</span>
                             </div>
                         </div>
                     </div>

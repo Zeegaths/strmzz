@@ -2,7 +2,7 @@
 import React from 'react'
 import { Element } from 'react-scroll'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { FaqsTypes } from '@/STRIMZ/types/guest';
+import { FaqsTypes } from '@/types/guest';
 import { subscriptionFaqs } from '@/utils/allFaqs';
 
 

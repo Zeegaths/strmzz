@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { MaxWrapperTypes } from "@/STRIMZ/types/guest";
+import { MaxWrapperTypes } from "@/types/guest";
 import React, { FC } from "react";
 
 /**

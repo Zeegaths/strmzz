@@ -184,7 +184,10 @@ exports.verify = async (id) => {
       await account.deployAccount(account_payload);
 
       await user.update({ verified: true });
+       } else if (!user.verified) {
+      await user.update({ verified: true });    
     }
+    
     const accessToken = await GenerateToken(user.id);
     await Token.deleteVerificationTokens(user.id);
     return CheckDBResponse.successResponse({

@@ -4,7 +4,7 @@ import React from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { airtimeSchema, AirtimeInput, networkProviders } from '@/STRIMZ/types/utilityBills'
+import { airtimeSchema, AirtimeInput, networkProviders } from '@/types/utilityBills'
 import FormInput from '@/components/auth/shared/FormInput'
 import {
     Select,

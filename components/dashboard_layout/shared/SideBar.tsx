@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/shared/Logo';
 import StrimzLogo from '@/public/logo/blueLogo.png';
-import { SideBarLinksTypes } from '@/STRIMZ/types/dashboard';
+import { SideBarLinksTypes } from '@/types/dashboard';
 
 interface SideBarProps {
   sidebarOpen: boolean;

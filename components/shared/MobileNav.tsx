@@ -11,7 +11,7 @@ import Logo from './Logo';
 import { Link as Spy } from "react-scroll";
 import { LayoutDashboard, MoveUpRight } from 'lucide-react';
 import { navLinks } from '@/utils/guestNavLinks';
-import { NavLinkTypes } from '@/STRIMZ/types/guest';
+import { NavLinkTypes } from '@/types/guest';
 
 /**
  * A mobile navigation menu that slides up from the bottom of the screen when the burger icon is clicked.

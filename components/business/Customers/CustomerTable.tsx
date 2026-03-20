@@ -10,7 +10,7 @@ import {
     ColumnDef,
     SortingState,
 } from '@tanstack/react-table'
-import { Customer } from '@/STRIMZ/types/customers'
+import { Customer } from '@/types/customers'
 import { PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE } from './constants'
 import { formatCurrency } from './utils'
 import { BiSortAlt2, BiSortUp, BiSortDown } from 'react-icons/bi'

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { FaXTwitter } from "react-icons/fa6";
 import { FaLinkedin } from "react-icons/fa";
 import { footerLinks } from '@/utils/guestNavLinks'
-import { footerLinksTypes } from '@/STRIMZ/types/guest'
+import { footerLinksTypes } from '@/types/guest'
 import PaddedLines from './paddedLines'
 
 /**

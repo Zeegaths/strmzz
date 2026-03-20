@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { businessInfoSchema, BusinessInfoInput } from '@/STRIMZ/types/auth';
+import { z } from 'zod';
 import AuthFormContainer from '@/components/auth/shared/AuthFormContainer';
 import FormInput from '@/components/auth/shared/FormInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { apiFetch, apiGet } from '@/lib/api';
 
 /**
  * Business types for selection
@@ -28,104 +29,151 @@ const businessTypes = [
     { value: 'non_profit', label: 'Non-profit' },
     { value: 'web3_crypto', label: 'Web3/Crypto Business' },
     { value: 'consulting', label: 'Consulting' },
-    { value: 'agency', label: 'Agency' },
     { value: 'marketplace', label: 'Marketplace' },
-    { value: 'subscription', label: 'Subscription Service' },
     { value: 'other', label: 'Other' },
 ];
 
-/**
- * Business information form component
- */
+const merchantSetupSchema = z.object({
+    businessName: z.string().min(2, 'Business name must be at least 2 characters').max(100),
+    businessLocation: z.string().min(1, 'Business location is required'),
+    businessType: z.string().min(1, 'Business type is required'),
+    walletAddress: z
+        .string()
+        .min(1, 'Wallet address is required')
+        .regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid Ethereum address (0x...)'),
+});
+
+type MerchantSetupInput = z.infer<typeof merchantSetupSchema>;
+
 const BusinessInfoSettings = () => {
     const router = useRouter();
+
+    // Check if merchant already exists — redirect to dashboard
+    useEffect(() => {
+        const checkMerchant = async () => {
+            try {
+                const res = await apiGet('/merchants/me');
+                if (res.success && (res.data || res.message)) {
+                    router.push('/business');
+                }
+            } catch {}
+        };
+        checkMerchant();
+    }, [router]);
 
     const {
         register,
         handleSubmit,
         control,
         formState: { errors, isSubmitting, isValid, isDirty },
-        reset,
-    } = useForm<BusinessInfoInput>({
-        resolver: zodResolver(businessInfoSchema),
+    } = useForm<MerchantSetupInput>({
+        resolver: zodResolver(merchantSetupSchema),
         mode: 'onChange',
-        defaultValues: {
-            businessName: '',
-            businessLocation: '',
-            businessType: '',
-        },
     });
 
-    const onSubmit = async (data: BusinessInfoInput) => {
+    const onSubmit = async (data: MerchantSetupInput) => {
         try {
-            console.log('Business info data:', data);
+            // Get stored user email
+            const storedUser = localStorage.getItem('strimz_user');
+            const user = storedUser ? JSON.parse(storedUser) : null;
+            const email = user?.email || '';
 
-            // TODO: Replace with actual API call
-            // await submitBusinessInfo(data);
-
-            toast.success('Business information setup successful', {
-                position: 'top-right',
+            const res = await apiFetch('/merchants/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    walletAddress: data.walletAddress,
+                    name: data.businessName,
+                    businessEmail: email,
+                }),
             });
 
-            router.push('/auth/business/verify-email');
+            if (!res.success) {
+                const errorMsg = res.error || res.message || 'Registration failed';
+                toast.error(typeof errorMsg === 'string' ? errorMsg : 'Registration failed', {
+                    position: 'top-right',
+                });
+                return;
+            }
+
+            const resData = res.data || res.message;
+
+            // Save API keys info if returned
+            if (resData?.keys) {
+                localStorage.setItem('strimz_merchant_keys', JSON.stringify(resData.keys));
+            }
+
+            toast.success('Merchant account created! Your API keys are ready.', {
+                position: 'top-right',
+                duration: 5000,
+            });
+
+            router.push('/business');
         } catch (error: any) {
-            console.error('Failed to setup business info:', error);
-            toast.error(error?.message || 'Setup failed. Please try again.', {
+            console.error('Failed to register merchant:', error);
+            toast.error('Something went wrong. Please try again.', {
                 position: 'top-right',
             });
-        } finally {
-            reset();
         }
     };
 
     return (
-        <AuthFormContainer title="Tell us about your business" className="md:w-[400px]">
+        <AuthFormContainer title="Set Up Your Business">
+            <p className="font-poppins text-center text-[14px] text-[#58556A] mt-2">
+                Tell us about your business to start accepting payments
+            </p>
+
             <form onSubmit={handleSubmit(onSubmit)} className="w-full flex flex-col gap-3 mt-6">
                 <FormInput
                     label="Business Name"
                     id="businessName"
                     type="text"
-                    placeholder="Strimz Inc."
+                    placeholder="Acme Inc."
                     register={register('businessName')}
                     error={errors.businessName?.message}
                 />
 
-                <Controller
-                    name="businessLocation"
-                    control={control}
-                    render={({ field }) => (
-                        <CountrySelector
-                            value={field.value}
-                            onChange={field.onChange}
-                            error={errors.businessLocation?.message}
-                            label="Business Location"
-                            placeholder="Select country"
-                        />
+                <div className="flex flex-col gap-1">
+                    <label
+                        htmlFor="businessLocation"
+                        className="font-poppins text-[14px] font-[500] text-[#1A1A2E] leading-[24px]"
+                    >
+                        Business Location
+                    </label>
+                    <Controller
+                        name="businessLocation"
+                        control={control}
+                        render={({ field }) => (
+                            <CountrySelector
+                                value={field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                    {errors.businessLocation && (
+                        <p className="font-poppins text-[12px] text-red-500 mt-1">
+                            {errors.businessLocation.message}
+                        </p>
                     )}
-                />
+                </div>
 
-                <div className="w-full flex flex-col">
-                    <label className="font-poppins text-[14px] text-[#58556A] leading-[24px] mb-1">
+                <div className="flex flex-col gap-1">
+                    <label
+                        htmlFor="businessType"
+                        className="font-poppins text-[14px] font-[500] text-[#1A1A2E] leading-[24px]"
+                    >
                         Business Type
                     </label>
                     <Controller
                         name="businessType"
                         control={control}
                         render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger
-                                    className={`w-full h-[44px] rounded-[8px] border bg-[#F9FAFB] shadow-navbarShadow font-poppins text-[14px] text-[#8E8C9C] px-4 outline-none focus:ring-0 transition duration-300 focus:border-accent ${errors.businessType ? 'border-red-500' : 'border-[#E5E7EB]'
-                                        }`}
-                                >
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger className="w-full h-[48px] rounded-[8px] border border-[#E5E7EB] bg-white font-poppins text-[14px]">
                                     <SelectValue placeholder="Select business type" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {businessTypes.map((type) => (
-                                        <SelectItem
-                                            key={type.value}
-                                            value={type.value}
-                                            className="cursor-pointer hover:bg-[#F9FAFB]"
-                                        >
+                                        <SelectItem key={type.value} value={type.value}>
                                             {type.label}
                                         </SelectItem>
                                     ))}
@@ -134,17 +182,28 @@ const BusinessInfoSettings = () => {
                         )}
                     />
                     {errors.businessType && (
-                        <p className="text-red-500 text-[12px] font-poppins mt-1">
+                        <p className="font-poppins text-[12px] text-red-500 mt-1">
                             {errors.businessType.message}
                         </p>
                     )}
                 </div>
 
+                <FormInput
+                    label="Settlement Wallet Address"
+                    id="walletAddress"
+                    type="text"
+                    placeholder="0x..."
+                    register={register('walletAddress')}
+                    error={errors.walletAddress?.message}
+                />
+                <p className="font-poppins text-[11px] text-[#9CA3AF] -mt-2">
+                    This is where you&apos;ll receive USDC payments. Use a wallet you control on Base.
+                </p>
+
                 <SubmitButton
                     isSubmitting={isSubmitting}
                     disabled={!isDirty || !isValid}
-                    text="Continue"
-                    className="mt-3"
+                    text="Create Merchant Account"
                 />
             </form>
         </AuthFormContainer>

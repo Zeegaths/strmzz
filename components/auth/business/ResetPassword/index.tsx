@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RxCaretLeft } from 'react-icons/rx';
 import { TbLockPassword } from 'react-icons/tb';
-import { resetPasswordSchema, ResetPasswordInput } from '@/STRIMZ/types/auth';
+import { resetPasswordSchema, ResetPasswordInput } from '@/types/auth';
 import FormInput from '@/components/auth/shared/FormInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
 

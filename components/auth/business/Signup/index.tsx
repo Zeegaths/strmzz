@@ -6,16 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { businessSignupSchema, BusinessSignupInput } from '@/STRIMZ/types/auth';
+import { userSignupSchema, UserSignupInput } from '@/types/auth';
+import { signUp } from '@/lib/auth';
 import AuthFormContainer from '@/components/auth/shared/AuthFormContainer';
 import FormInput from '@/components/auth/shared/FormInput';
 import PasswordInput from '@/components/auth/shared/PasswordInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
 import SocialAuthButton from '@/components/auth/shared/SocialAuthButton';
 
-/**
- * Business signup form component
- */
 const BusinessSignupForm = () => {
     const router = useRouter();
 
@@ -23,43 +21,57 @@ const BusinessSignupForm = () => {
         register,
         handleSubmit,
         formState: { errors, isSubmitting, isValid, isDirty },
-        reset,
-    } = useForm<BusinessSignupInput>({
-        resolver: zodResolver(businessSignupSchema),
+    } = useForm<UserSignupInput>({
+        resolver: zodResolver(userSignupSchema),
         mode: 'onChange',
     });
 
-    const onSubmit = async (data: BusinessSignupInput) => {
+    const onSubmit = async (data: UserSignupInput) => {
         try {
-            console.log('Business signup data:', data);
+            const res = await signUp({
+                username: data.username,
+                email: data.email,
+                password: data.password,
+            });
 
-            // TODO: Replace with actual API call
-            // await signupBusiness(data);
+            if (!res.success) {
+                const errorMsg = typeof res.message === 'string'
+                    ? res.message
+                    : res.error || 'Signup failed. Please try again.';
+                toast.error(errorMsg, { position: 'top-right' });
+                return;
+            }
 
-            toast.success('Sign up successful', {
+            toast.success('Account created! Check your email for the verification code.', {
                 position: 'top-right',
             });
 
-            // After signup, redirect to business info page
+            // Store email for the verify page
+            sessionStorage.setItem('strimz_verify_email', data.email);
             router.push('/auth/business/verify-email');
         } catch (error: any) {
             console.error('Failed to sign up:', error);
-            toast.error(error?.message || 'Sign up failed. Please try again.', {
+            toast.error('Something went wrong. Please try again.', {
                 position: 'top-right',
             });
-        } finally {
-            reset();
         }
     };
 
     const handleGoogleSignup = () => {
-        // TODO: Implement Google OAuth for business
-        console.log('Business Google signup clicked');
+        toast.info('Google signup coming soon!', { position: 'top-right' });
     };
 
     return (
-        <AuthFormContainer title="Welcome to Strimz">
+        <AuthFormContainer title="Create Business Account">
             <form onSubmit={handleSubmit(onSubmit)} className="w-full flex flex-col gap-3 mt-6">
+                <FormInput
+                    label="Business Name"
+                    id="username"
+                    type="text"
+                    placeholder="Your business name"
+                    register={register('username')}
+                    error={errors.username?.message}
+                />
 
                 <FormInput
                     label="Business Email"
@@ -73,7 +85,7 @@ const BusinessSignupForm = () => {
                 <PasswordInput
                     label="Password"
                     id="password"
-                    placeholder="Password"
+                    placeholder="Create a strong password"
                     register={register('password')}
                     error={errors.password?.message}
                 />
@@ -81,8 +93,7 @@ const BusinessSignupForm = () => {
                 <SubmitButton
                     isSubmitting={isSubmitting}
                     disabled={!isDirty || !isValid}
-                    text="Continue"
-                    className="mt-3"
+                    text="Create Account"
                 />
 
                 <div className="w-full h-[1px] bg-[#E5E7EB]" />

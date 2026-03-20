@@ -4,7 +4,7 @@ import React from 'react';
 import Logo from '@/components/shared/Logo';
 import StrimzLogo from '@/public/logo/whiteLogo.png';
 import HamburgerButton from './HamburgerButton';
-import { DashboardUserType } from '@/STRIMZ/types/dashboard';
+import { DashboardUserType } from '@/types/dashboard';
 
 interface HeaderProps {
   userType: DashboardUserType;

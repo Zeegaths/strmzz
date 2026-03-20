@@ -25,7 +25,7 @@ exports.getOwnMerchant = async (req, res, next) => {
     const result = await MerchantService.getOwnMerchant(req.user.uid);
     const { success, ...rest } = result;
     if (success) {
-      MessageResponse.successResponse(res, "Merchant found", 200, rest.data || rest.message);
+      MessageResponse.successResponse(res, "Merchant profile", 200, rest.data || rest.message);
     } else {
       MessageResponse.errorResponse(res, "Not found", 404, rest.error || rest.message);
     }
@@ -161,8 +161,8 @@ exports.getTransactions = async (req, res, next) => {
 
     const PaymentService = require("../../services/payment/PaymentService");
     const { page, size } = req.pagination;
-    const result = await PaymentService.listTransactions(merchant.data.id, page, size, req.query);
-    return MessageResponse.successResponse(res, "Transactions", 200, result.data);
+    const result = await PaymentService.listTransactions((merchant.data || merchant.message).id, page, size, req.query);
+    return MessageResponse.successResponse(res, "Transactions", 200, result.data || result.message);
   } catch (error) {
     console.log(error);
     MessageResponse.errorResponse(res, "internal server error", 500, error.message);
@@ -180,9 +180,9 @@ exports.getSubscriptions = async (req, res, next) => {
     const SubscriptionService = require("../../services/subscription/SubscriptionService");
     const { page, size } = req.pagination;
     const result = await SubscriptionService.listMerchantSubscriptions(
-      merchant.data.id, page, size, req.query
+      (merchant.data || merchant.message).id, page, size, req.query
     );
-    return MessageResponse.successResponse(res, "Subscriptions", 200, result.data);
+    return MessageResponse.successResponse(res, "Subscriptions", 200, result.data || result.message);
   } catch (error) {
     console.log(error);
     MessageResponse.errorResponse(res, "internal server error", 500, error.message);
@@ -203,7 +203,7 @@ exports.getCustomers = async (req, res, next) => {
     const { page, size } = req.pagination;
 
     const customers = await Transaction.findAll({
-      where: { merchantId: merchant.data.id },
+      where: { merchantId: (merchant.data || merchant.message).id },
       attributes: [
         "payer",
         [sequelize.fn("COUNT", sequelize.col("id")), "totalTransactions"],
@@ -229,7 +229,7 @@ exports.getAllMerchants = async (req, res, next) => {
   try {
     const { page, size } = req.pagination;
     const result = await MerchantService.getAllMerchants(page, size);
-    return MessageResponse.successResponse(res, "All merchants", 200, result.data);
+    return MessageResponse.successResponse(res, "All merchants", 200, result.data || result.message);
   } catch (error) {
     console.log(error);
     MessageResponse.errorResponse(res, "internal server error", 500, error.message);

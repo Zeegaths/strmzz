@@ -4,7 +4,7 @@ import React from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { electricitySchema, ElectricityInput, electricityProviders, meterTypes } from '@/STRIMZ/types/utilityBills'
+import { electricitySchema, ElectricityInput, electricityProviders, meterTypes } from '@/types/utilityBills'
 import FormInput from '@/components/auth/shared/FormInput'
 import {
     Select,

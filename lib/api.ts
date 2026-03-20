@@ -7,15 +7,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  // Your auth flow stores the token; adjust the key to match your login response
-  const user = localStorage.getItem('strimzBusiness') || localStorage.getItem('strimzUser')
-  if (!user) return null
-  try {
-    const parsed = JSON.parse(user)
-    return parsed.accessToken || parsed.token || null
-  } catch {
-    return null
-  }
+  return localStorage.getItem('strimz_token') || null
 }
 
 export async function apiFetch<T = any>(

@@ -4,7 +4,7 @@ import { IoFilterSharp, IoSearchOutline } from 'react-icons/io5'
 import FilterDropdown from './FilterDropdown'
 import TransactionTable from './TransactionTable'
 import { sampleTransactions } from '@/utils/sampleTransactionData'
-import { FilterState, Transaction } from '@/STRIMZ/types/transactions'
+import { FilterState, Transaction } from '@/types/transactions'
 import { FILTER_OPTIONS } from './constants'
 
 const TransactionBusinessDashboard = () => {

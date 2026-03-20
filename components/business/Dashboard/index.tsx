@@ -1,3 +1,4 @@
+'use client'
 import Image from 'next/image'
 import React from 'react'
 import { AiOutlineDollarCircle } from 'react-icons/ai'
@@ -7,8 +8,29 @@ import Earnings from './Earnings'
 import Transactions from './Transactions'
 import Customers from './Customers'
 import Withdraw from '@/components/business/Dashboard/Withdraw'
+import { useQuery } from '@tanstack/react-query'
+import { apiGet } from '@/lib/api'
 
 const BusinessDashboardHome = () => {
+    const { data: statsRes, isLoading } = useQuery({
+        queryKey: ['merchant-stats'],
+        queryFn: () => apiGet('/merchants/me/stats'),
+    })
+
+    const stats = statsRes?.data || statsRes?.message || null
+
+    const totalVolume = stats?.totalVolume ?? 0
+    const usdcVolume = stats?.usdcVolume ?? 0
+    const usdtVolume = stats?.usdtVolume ?? 0
+    const totalWithdrawn = stats?.totalWithdrawn ?? 0
+
+    const formatAmount = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount)
+    }
+
     return (
         <section className="w-full flex flex-col gap-6">
             <main className="w-full bg-[#F9FAFB] rounded-[16px] p-4 flex flex-col gap-2.5">
@@ -18,25 +40,37 @@ const BusinessDashboardHome = () => {
                     <div className='w-full grid lg:grid-cols-4 grid-cols-2 gap-4 lg:gap-0'>
 
                         {/* Wallet Balance */}
-                        <div className="flex flex-col gap-3 ">
+                        <div className="flex flex-col gap-3">
                             <span className="flex items-center gap-2 uppercase font-[400] font-poppins text-[#58556A] text-xs">
                                 <span className="w-[24px] h-[24px] border-[0.2px] border-[#E5E7EB] shadow-[0px_-1.2px_1.2px_0px_#0000001F_inset] rounded-full flex justify-center items-center bg-white p-[1px]">
                                     <AiOutlineDollarCircle className="text-black w-[22px] h-[22px]" />
                                 </span>
                                 wallet balance
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 6,780</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">
+                                {isLoading ? (
+                                    <span className="w-24 h-6 bg-gray-100 rounded animate-pulse inline-block" />
+                                ) : (
+                                    `$ ${formatAmount(totalVolume)}`
+                                )}
+                            </h3>
                         </div>
 
                         {/* USDC */}
-                        <div className="flex flex-col gap-3 md:border-l border-[#E5E7EB] md:pl-4 ">
+                        <div className="flex flex-col gap-3 md:border-l border-[#E5E7EB] md:pl-4">
                             <span className="flex items-center gap-2 uppercase font-[400] font-poppins text-[#58556A] text-xs">
                                 <span className="w-[24px] h-[24px] border-[0.2px] border-[#E5E7EB] shadow-[0px_-1.2px_1.2px_0px_#0000001F_inset] rounded-full bg-white p-[1px]">
-                                    <Image src={usdcIcon} alt='usdt icon' className='w-[24px] h-[24px]' width={68} height={69} quality={100} priority />
+                                    <Image src={usdcIcon} alt='usdc icon' className='w-[24px] h-[24px]' width={68} height={69} quality={100} priority />
                                 </span>
                                 usdc
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 3,150</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">
+                                {isLoading ? (
+                                    <span className="w-24 h-6 bg-gray-100 rounded animate-pulse inline-block" />
+                                ) : (
+                                    `$ ${formatAmount(usdcVolume)}`
+                                )}
+                            </h3>
                         </div>
 
                         {/* USDT */}
@@ -47,18 +81,30 @@ const BusinessDashboardHome = () => {
                                 </span>
                                 usdt
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 4,890</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">
+                                {isLoading ? (
+                                    <span className="w-24 h-6 bg-gray-100 rounded animate-pulse inline-block" />
+                                ) : (
+                                    `$ ${formatAmount(usdtVolume)}`
+                                )}
+                            </h3>
                         </div>
 
                         {/* Withdrawals */}
-                        <div className="flex flex-col gap-3 md:border-l border-[#E5E7EB] md:pl-4 ">
+                        <div className="flex flex-col gap-3 md:border-l border-[#E5E7EB] md:pl-4">
                             <span className="flex items-center gap-2 uppercase font-[400] font-poppins text-[#58556A] text-xs">
                                 <span className="w-[24px] h-[24px] border-[0.2px] border-[#E5E7EB] shadow-[0px_-1.2px_1.2px_0px_#0000001F_inset] rounded-full flex justify-center items-center bg-white p-[1px]">
                                     <AiOutlineDollarCircle className="text-black w-[22px] h-[22px]" />
                                 </span>
                                 withdrawals
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 104,320</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">
+                                {isLoading ? (
+                                    <span className="w-24 h-6 bg-gray-100 rounded animate-pulse inline-block" />
+                                ) : (
+                                    `$ ${formatAmount(totalWithdrawn)}`
+                                )}
+                            </h3>
                         </div>
                     </div>
                 </div>
@@ -73,7 +119,6 @@ const BusinessDashboardHome = () => {
 
             {/* Customers */}
             <Customers />
-
         </section>
     )
 }

@@ -1,5 +1,5 @@
 'use client'
-import { ErrorDisplayProps } from '@/STRIMZ/types/auth';
+import { ErrorDisplayProps } from '@/types/auth';
 import React from 'react';
 import { IoWarningOutline } from "react-icons/io5";
 

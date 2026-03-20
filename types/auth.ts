@@ -86,9 +86,8 @@ export const setNewPasswordSchema = z
 export const verifyEmailSchema = z.object({
   otp: z
     .string()
-    .min(6, "OTP must be 6 digits")
-    .max(6, "OTP must be 6 digits")
-    .regex(/^\d+$/, "OTP must contain only numbers"),
+    .min(4, "Code must be 4 characters")
+    .max(4, "Code must be 4 characters"),
 });
 
 // ============================================================================

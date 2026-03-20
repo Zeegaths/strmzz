@@ -1,150 +1,176 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
-import { BsEnvelope } from "react-icons/bs"
-import {
-    InputOTP,
-    InputOTPGroup,
-    InputOTPSlot,
-} from "@/components/ui/input-otp"
-import { useEffect, useState } from "react"
-import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
-import { useRouter } from "next/navigation"
-import { AiOutlineLoading3Quarters } from "react-icons/ai"
-import { RxCaretLeft } from "react-icons/rx";
-import { toast } from "sonner"
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import { verifyEmailSchema, VerifyEmailInput } from '@/types/auth';
+import { verifyOtp, resendVerification } from '@/lib/auth';
+import { apiGet } from '@/lib/api';
+import AuthFormContainer from '@/components/auth/shared/AuthFormContainer';
+import SubmitButton from '@/components/auth/shared/SubmitButton';
 
-
-/**
- * Renders a form for verifying an email address.
- *
- * The form displays an envelope icon and a message that tells the user to check their email
- * for instructions to verify their email address. It also includes the FormInputs component
- * for user input and a button to resend the verification email.
- *
- * @returns A JSX element representing the verification form.
- */
-const VerificationForm = () => {
-    const router = useRouter()
-    const [user, setUser] = useState<{ email?: string }>({});
-    const [isSending, setIsSending] = useState<boolean>(false)
+const BusinessVerifyForm = () => {
+    const router = useRouter();
+    const [email, setEmail] = useState<string>('');
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const verifyingRef = useRef(false);
 
     useEffect(() => {
-        const data = window.localStorage.getItem("strimzUser");
-        const parsedUser = data ? JSON.parse(data) : { email: "andrew@gmail.com" };
-        setUser(parsedUser);
+        const storedEmail = sessionStorage.getItem('strimz_verify_email');
+        if (storedEmail) {
+            setEmail(storedEmail);
+        }
     }, []);
 
-    const handleResendOTP = async () => {
-        setIsSending(true)
-        try {
-            const data = JSON.stringify({ email: user?.email });
-            console.log(data);
-        } catch (error: any) {
-            console.error(error);
-
-        } finally {
-            setIsSending(false)
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+            return () => clearTimeout(timer);
         }
-    }
+    }, [resendCooldown]);
 
-    return (
-        <div className="shadow-authCardShadow md:w-[380px] w-full rounded-[16px] bg-white border border-[#E5E7EB] flex flex-col gap-4 items-center py-8 px-6 relative">
-            <div className="w-[56px] h-[56px] flex justify-center items-center bg-white border-[0.7px] border-[#E5E7EB] rounded-full shadow-verifyMShadow text-accent">
-                <BsEnvelope className="w-5 h-5" />
-            </div>
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting, isValid, isDirty },
+    } = useForm<VerifyEmailInput>({
+        resolver: zodResolver(verifyEmailSchema),
+        mode: 'onChange',
+    });
 
-            <div className="w-full flex flex-col gap-3">
-                <h4 className="font-poppins font-[600] text-base text-primary text-center">Verify email address</h4>
-                <p className="font-poppins font-[400] text-[14px] leading-[24px] text-[#58556A] text-center px-3">Please check <span className="font-[500]">{user?.email}</span> for an email and enter your code below. </p>
-            </div>
-
-            <FormInputs />
-
-            <p className="text-[#58556A] font-[400] font-poppins text-[14px] leading-[24px]">
-                Didn&apos;t get an email?
-                <button type="button" onClick={handleResendOTP} className={`${!isSending && "underline"} ml-2 text-accent font-[500]`}>
-                    {
-                        isSending ?
-                            (<span className="flex items-center gap-1">
-                                <AiOutlineLoading3Quarters className="animate-spin" />
-                                Sending...
-                            </span>)
-                            : (<span>Resend code</span>)
-                    }
-                </button>
-            </p>
-
-            {/* go back btn */}
-            <button type="button" onClick={() => router.back()} className="absolute top-5 left-5 text-primary font-bold">
-                <RxCaretLeft className="w-8 h-8" />
-            </button>
-        </div>
-    )
-}
-
-export default VerificationForm
-
-/**
- * Renders a form for the user to enter a verification code sent to their email.
- * The form is an input with a length of 4, and it only accepts digits and letters.
- * When the user enters a valid code, the form calls the validateOTP function to
- * verify the code. If the verification is successful, the user is redirected to
- * the plans page.
- *
- * @returns A JSX element representing the verification form.
- */
-const FormInputs = () => {
-    const [value, setValue] = useState("")
-    const [isLoading, setIsLoading] = useState(false)
-    const router = useRouter()
-
-    const validateOTP = async (otp: string) => {
-        setIsLoading(true)
+    const redirectAfterVerify = async () => {
+        sessionStorage.removeItem('strimz_verify_email');
+        // Check if merchant already registered
         try {
+            const res = await apiGet('/merchants/me');
+            if (res.success && (res.data || res.message)) {
+                router.push('/business');
+            } else {
+                router.push('/auth/business/setup');
+            }
+        } catch {
+            router.push('/auth/business/setup');
+        }
+    };
 
-            console.log(otp);
-            if (otp === "1234") {
-                toast.success("user verified", {
-                    position: "top-right",
-                })
-                router.push("/auth/business/setup");
+    const onSubmit = async (data: VerifyEmailInput) => {
+        if (verifyingRef.current) return;
+        verifyingRef.current = true;
+
+        try {
+            const res = await verifyOtp(data.otp);
+
+            if (!res.success) {
+                if (localStorage.getItem('strimz_token')) {
+                    await redirectAfterVerify();
+                    return;
+                }
+                const errorMsg = typeof res.message === 'string'
+                    ? res.message
+                    : 'Verification failed. Please check your code and try again.';
+                toast.error(errorMsg, { position: 'top-right' });
+                verifyingRef.current = false;
+                return;
             }
 
-        } catch (error: any) {
-            console.error(error);
-        } finally {
-            setIsLoading(false)
-        }
-    }
+            toast.success('Email verified! Setting up your account...', {
+                position: 'top-right',
+            });
 
-    const handleChange = (value: string) => {
-        setValue(value)
-        if (value.length === 4) {
-            validateOTP(value)
+            await redirectAfterVerify();
+        } catch (error: any) {
+            if (localStorage.getItem('strimz_token')) {
+                await redirectAfterVerify();
+                return;
+            }
+            console.error('Failed to verify:', error);
+            toast.error('Something went wrong. Please try again.', {
+                position: 'top-right',
+            });
+            verifyingRef.current = false;
         }
-    }
+    };
+
+    const handleResend = async () => {
+        if (!email || resendCooldown > 0) return;
+
+        try {
+            const res = await resendVerification(email);
+
+            if (res.success) {
+                toast.success('Verification code sent! Check your email.', {
+                    position: 'top-right',
+                });
+                setResendCooldown(60);
+            } else {
+                toast.error(res.message || 'Failed to resend code.', {
+                    position: 'top-right',
+                });
+            }
+        } catch (error) {
+            toast.error('Failed to resend code.', { position: 'top-right' });
+        }
+    };
 
     return (
-        <>
-            <InputOTP
-                maxLength={4}
-                pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-                value={value}
-                onChange={handleChange}
-                disabled={isLoading}
-            >
-                <InputOTPGroup className="gap-1">
-                    {[...Array(4)].map((_, index) => (
-                        <InputOTPSlot key={index} index={index} />
-                    ))}
-                </InputOTPGroup>
-            </InputOTP>
-            {isLoading &&
-                <p className="flex justify-center text-sm items-center text-accent gap-1">
-                    <AiOutlineLoading3Quarters className="animate-spin text-accent" />
-                    Verifying...
+        <AuthFormContainer title="Verify Your Email">
+            <div className="w-full flex flex-col items-center gap-2 mt-4">
+                <p className="font-poppins text-center text-[14px] text-[#58556A] leading-[24px]">
+                    We sent a verification code to
                 </p>
-            }
-        </>
-    )
-}
+                {email && (
+                    <p className="font-poppins text-center font-[600] text-[14px] text-[#1A1A2E] leading-[24px]">
+                        {email}
+                    </p>
+                )}
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="w-full flex flex-col gap-4 mt-6">
+                <div className="flex flex-col gap-1">
+                    <label
+                        htmlFor="otp"
+                        className="font-poppins text-[14px] font-[500] text-[#1A1A2E] leading-[24px]"
+                    >
+                        Verification Code
+                    </label>
+                    <input
+                        id="otp"
+                        type="text"
+                        maxLength={4}
+                        placeholder="Enter 4-character code"
+                        className="w-full h-[48px] px-4 rounded-[8px] border border-[#E5E7EB] bg-white font-poppins text-[16px] text-center tracking-[8px] placeholder:tracking-normal placeholder:text-center focus:outline-none focus:border-accent transition-colors"
+                        {...register('otp')}
+                    />
+                    {errors.otp && (
+                        <p className="font-poppins text-[12px] text-red-500 mt-1">
+                            {errors.otp.message}
+                        </p>
+                    )}
+                </div>
+
+                <SubmitButton
+                    isSubmitting={isSubmitting}
+                    disabled={!isDirty || !isValid}
+                    text="Verify"
+                />
+
+                <div className="w-full flex justify-center mt-4">
+                    <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resendCooldown > 0}
+                        className="font-poppins text-[14px] text-accent hover:underline disabled:text-[#9CA3AF] disabled:no-underline transition-colors"
+                    >
+                        {resendCooldown > 0
+                            ? `Resend code in ${resendCooldown}s`
+                            : "Didn't receive a code? Resend"}
+                    </button>
+                </div>
+            </form>
+        </AuthFormContainer>
+    );
+};
+
+export default BusinessVerifyForm;

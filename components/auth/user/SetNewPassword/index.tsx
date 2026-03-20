@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TbLockPassword } from 'react-icons/tb';
-import { setNewPasswordSchema, SetNewPasswordInput } from '@/STRIMZ/types/auth';
+import { setNewPasswordSchema, SetNewPasswordInput } from '@/types/auth';
 import PasswordInput from '@/components/auth/shared/PasswordInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
 

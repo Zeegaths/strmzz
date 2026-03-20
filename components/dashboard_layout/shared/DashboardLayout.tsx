@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { DashboardUserType, SideBarLinksTypes } from '@/STRIMZ/types/dashboard';
+import { DashboardUserType, SideBarLinksTypes } from '@/types/dashboard';
 import Header from './Header';
 import SideBar from './SideBar';
 import Footer from './Footer';

@@ -7,7 +7,7 @@ import { Link as Spy } from "react-scroll";
 import MobileNav from './MobileNav';
 import { useRouter } from 'next/navigation';
 import { navLinks } from '@/utils/guestNavLinks';
-import { NavLinkTypes } from '@/STRIMZ/types/guest';
+import { NavLinkTypes } from '@/types/guest';
 import { InteractiveHoverButton } from '../magicui/interactive-hover-button';
 import { LogIn } from 'lucide-react';
 

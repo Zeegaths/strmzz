@@ -6,16 +6,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { loginSchema, LoginInput } from '@/STRIMZ/types/auth';
+import { loginSchema, LoginInput } from '@/types/auth';
+import { signIn } from '@/lib/auth';
+import { apiGet } from '@/lib/api';
 import AuthFormContainer from '@/components/auth/shared/AuthFormContainer';
 import FormInput from '@/components/auth/shared/FormInput';
 import PasswordInput from '@/components/auth/shared/PasswordInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
 import SocialAuthButton from '@/components/auth/shared/SocialAuthButton';
 
-/**
- * Business login form component
- */
 const BusinessLoginForm = () => {
     const router = useRouter();
 
@@ -23,7 +22,6 @@ const BusinessLoginForm = () => {
         register,
         handleSubmit,
         formState: { errors, isSubmitting, isValid, isDirty },
-        reset,
     } = useForm<LoginInput>({
         resolver: zodResolver(loginSchema),
         mode: 'onChange',
@@ -31,33 +29,54 @@ const BusinessLoginForm = () => {
 
     const onSubmit = async (data: LoginInput) => {
         try {
-            console.log('Business login data:', data);
+            const res = await signIn(data);
 
-            // TODO: Replace with actual API call
-            // await loginBusiness(data);
+            if (res.success) {
+                toast.success('Login successful!', { position: 'top-right' });
 
-            toast.success('Login successful', {
+                // Check if merchant is registered
+                try {
+                    const merchantRes = await apiGet('/merchants/me');
+                    if (merchantRes.success && (merchantRes.data || merchantRes.message)) {
+                        router.push('/business');
+                    } else {
+                        router.push('/auth/business/setup');
+                    }
+                } catch {
+                    router.push('/auth/business/setup');
+                }
+                return;
+            }
+
+            const errorMsg = typeof res.error === 'string' ? res.error :
+                             typeof res.message === 'string' ? res.message : '';
+
+            if (errorMsg.toLowerCase().includes('verification')) {
+                toast.info('Please verify your email first. Check your inbox for the OTP.', {
+                    position: 'top-right',
+                });
+                sessionStorage.setItem('strimz_verify_email', data.email);
+                router.push('/auth/business/verify-email');
+                return;
+            }
+
+            toast.error(errorMsg || 'Login failed. Please try again.', {
                 position: 'top-right',
             });
-
-            router.push('/business');
         } catch (error: any) {
             console.error('Failed to login:', error);
-            toast.error(error?.message || 'Login failed. Please try again.', {
+            toast.error('Something went wrong. Please try again.', {
                 position: 'top-right',
             });
-        } finally {
-            reset();
         }
     };
 
     const handleGoogleLogin = () => {
-        // TODO: Implement Google OAuth for business
-        console.log('Business Google login clicked');
+        toast.info('Google login coming soon!', { position: 'top-right' });
     };
 
     return (
-        <AuthFormContainer title="Welcome Back" >
+        <AuthFormContainer title="Welcome Back">
             <form onSubmit={handleSubmit(onSubmit)} className="w-full flex flex-col gap-3 mt-6">
                 <FormInput
                     label="Business Email"

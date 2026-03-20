@@ -10,7 +10,7 @@ import {
     ColumnDef,
     SortingState,
 } from '@tanstack/react-table'
-import { Transaction } from '@/STRIMZ/types/transactions'
+import { Transaction } from '@/types/transactions'
 import { PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE } from './constants'
 import { getStatusColor, copyToClipboard } from './utils'
 import { RiExternalLinkLine } from 'react-icons/ri'

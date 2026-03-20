@@ -1,4 +1,4 @@
-import { LogoTypes } from '@/STRIMZ/types/guest'
+import { LogoTypes } from '@/types/guest'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { FC } from "react";
