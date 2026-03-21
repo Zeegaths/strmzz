@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import Subscriptions from "@/components/user/Subscriptions"
 
 export default function SubscriptionsPage() {

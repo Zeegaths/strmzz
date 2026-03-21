@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import UserDashboardHome from "@/components/user/Dashboard";
 
 export default function UserDashboard() {

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import UtilityBills from "@/components/user/UtilityBills";
 
 export default function UtilityBillPage() {

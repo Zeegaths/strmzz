@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import TxHistory from "@/components/user/TxHistory"
 
 export default function TransactionHistoryPage() {
