@@ -2,12 +2,18 @@
   "name": "strimz-subscription",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "@react-native-async-storage/async-storage": {
+      "react": "$react",
+      "react-native": ">=0.0.0"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
-  },
+  },  
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@privy-io/react-auth": "^3.10.0",
