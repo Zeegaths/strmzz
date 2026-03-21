@@ -39,4 +39,4 @@ module.exports = {
   development: usePostgres ? postgresConfig : sqliteConfig,
   test: postgresConfig,
   production: postgresConfig,
-};};
+};
