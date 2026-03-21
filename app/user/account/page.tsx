@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import UserAccountSettings from "@/components/user/Account"
 
 export default function AccountPage() {
