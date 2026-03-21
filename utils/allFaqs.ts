@@ -1,4 +1,4 @@
-import { FaqsTypes } from "@/STRIMZ/types/guest";
+import { FaqsTypes } from "@/types/guest";
 
 export const subscriptionFaqs: FaqsTypes[] = [
   {

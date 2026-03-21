@@ -25,8 +25,8 @@ const Customers = () => {
         queryFn: () => apiGet('/merchants/me/customers?limit=5'),
     })
 
-    const customers: Customer[] = (custRes?.data?.rows || custRes?.message?.rows || []) as Customer[]
-    const totalCustomers = custRes?.data?.count || custRes?.message?.count || 0
+    const customers: Customer[] = (custRes?.data?.rows || (custRes?.message as any)?.rows || []) as Customer[]
+    const totalCustomers = custRes?.data?.count || (custRes?.message as any)?.count || 0
 
     // Calculate repeat vs first-time from data
     const repeatCount = customers.filter(c => c.paymentCount > 1).length

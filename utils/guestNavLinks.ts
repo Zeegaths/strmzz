@@ -1,4 +1,4 @@
-import { footerLinksTypes, NavLinkTypes } from "@/STRIMZ/types/guest";
+import { footerLinksTypes, NavLinkTypes } from "@/types/guest";
 
 export const navLinks: NavLinkTypes[] = [
   {

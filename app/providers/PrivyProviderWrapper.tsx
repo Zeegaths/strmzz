@@ -29,8 +29,9 @@ export default function PrivyProviderWrapper({
           showWalletLoginFirst: false,
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-          requireUserPasswordOnCreate: false,
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
         defaultChain: base,
       }}

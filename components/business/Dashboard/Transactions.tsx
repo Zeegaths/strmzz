@@ -26,7 +26,7 @@ const Transactions = () => {
     })
 
     const stats = statsRes?.data || statsRes?.message || null
-    const transactions: Transaction[] = (txRes?.data?.rows || txRes?.message?.rows || []) as Transaction[]
+    const transactions: Transaction[] = (txRes?.data?.rows || (txRes?.message as any)?.rows || []) as Transaction[]
 
     const settledAmount = stats?.settledAmount ?? 0
     const pendingAmount = stats?.pendingAmount ?? 0

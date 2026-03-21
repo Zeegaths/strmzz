@@ -1,4 +1,4 @@
-import { Transaction } from "@/STRIMZ/types/transactions";
+import { Transaction } from "@/types/transactions";
 
 export const sampleTransactions: Transaction[] = [
   {

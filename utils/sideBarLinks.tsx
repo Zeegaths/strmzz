@@ -1,4 +1,4 @@
-import { SideBarLinksTypes } from "@/STRIMZ/types/dashboard";
+import { SideBarLinksTypes } from "@/types/dashboard";
 import { LiaMoneyBillWaveAltSolid } from "react-icons/lia";
 import { GoHome } from "react-icons/go";
 import { LuUsers } from "react-icons/lu";

@@ -1,4 +1,4 @@
-import { Customer } from "@/STRIMZ/types/customers";
+import { Customer } from "@/types/customers";
 
 export const sampleCustomers: Customer[] = [
   {
