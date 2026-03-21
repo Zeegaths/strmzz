@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 const baseUrl = isProduction
-  ? "https://strimz-subscription.vercel.app"
+  ? process.env.NEXT_PUBLIC_APP_URL || "https://strmzz.vercel.app"
   : `http://localhost:${process.env.PORT || 3000}`;
 
 const titleTemplate = "%s | Token Streaming App";
