@@ -4,6 +4,65 @@ const {
   ApiKeyEntity,
 } = require("../../database/classes");
 const crypto = require("crypto");
+const { ethers } = require("ethers");
+
+// ============================================================================
+// On-chain merchant registration
+// ============================================================================
+
+const STRIMZ_ABI = [
+  "function registerMerchant(address wallet, string name) external returns (bytes32)",
+  "event MerchantRegistered(bytes32 indexed merchantId, address indexed wallet, string name)",
+];
+
+async function registerMerchantOnChain(walletAddress, name) {
+  try {
+    const rpcUrl = process.env.BASE_RPC_URL;
+    const contractAddress = process.env.STRIMZ_CONTRACT_ADDRESS;
+    const privateKey = process.env.CHARGER_PRIVATE_KEY;
+
+    if (!rpcUrl || !contractAddress || !privateKey || contractAddress.length !== 42) {
+      console.log("[OnChain] Skipping on-chain registration — env not configured");
+      return null;
+    }
+
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const wallet = new ethers.Wallet(privateKey, provider);
+    const contract = new ethers.Contract(contractAddress, STRIMZ_ABI, wallet);
+
+    console.log(`[OnChain] Registering merchant ${name} (${walletAddress})...`);
+
+    const tx = await contract.registerMerchant(walletAddress, name);
+    const receipt = await tx.wait();
+
+    // Extract merchantId from event logs
+    const iface = new ethers.Interface(STRIMZ_ABI);
+    for (const log of receipt.logs) {
+      try {
+        const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+        if (parsed && parsed.name === "MerchantRegistered") {
+          const merchantId = parsed.args[0]; // bytes32 merchantId
+          console.log(`[OnChain] Merchant registered: ${merchantId}`);
+          return merchantId;
+        }
+      } catch (e) {
+        // Not our event, skip
+      }
+    }
+
+    console.log("[OnChain] Registration tx confirmed but no event found");
+    return null;
+  } catch (error) {
+    console.error("[OnChain] Registration failed:", error.message);
+    // Don't block the signup — on-chain registration is a nice-to-have
+    // Merchant can still use the dashboard, just can't receive payments until registered
+    return null;
+  }
+}
+
+// ============================================================================
+// Service Methods
+// ============================================================================
 
 exports.registerMerchant = async (userId, data) => {
   try {
@@ -33,6 +92,13 @@ exports.registerMerchant = async (userId, data) => {
       metadata: data.metadata || null,
     });
 
+    // Register on-chain (async — don't block signup if it fails)
+    const onChainId = await registerMerchantOnChain(data.walletAddress, data.name);
+    if (onChainId) {
+      await MerchantEntity.updateMerchant(merchant.id, { onChainId });
+      merchant.onChainId = onChainId;
+    }
+
     // Generate initial API key pair
     const keys = await ApiKeyEntity.generateKeyPair(merchant.id, "live");
     const testKeys = await ApiKeyEntity.generateKeyPair(merchant.id, "test");
@@ -44,6 +110,7 @@ exports.registerMerchant = async (userId, data) => {
         test: testKeys,
       },
       webhookSecret,
+      onChainRegistered: !!onChainId,
     });
   } catch (error) {
     console.log(error);
@@ -57,7 +124,10 @@ exports.getOwnMerchant = async (userId) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-    return CheckDBResponse.successResponse(merchant);
+    // Include webhookSecret for owner
+    const data = { ...merchant.toJSON() };
+    try { data.webhookSecret = merchant.dataValues.webhookSecret; } catch(e) {}
+    return CheckDBResponse.successResponse(data);
   } catch (error) {
     console.log(error);
     return CheckDBResponse.errorResponse(error);
@@ -70,13 +140,7 @@ exports.updateMerchant = async (userId, data) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
-    const updated = await MerchantEntity.updateMerchant(merchant.id, {
-      name: data.name,
-      businessEmail: data.businessEmail,
-      redirectUrl: data.redirectUrl,
-    });
-
+    const updated = await MerchantEntity.updateMerchant(merchant.id, data);
     return CheckDBResponse.successResponse(updated);
   } catch (error) {
     console.log(error);
@@ -91,10 +155,13 @@ exports.updateWallet = async (userId, walletAddress) => {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
 
-    const updated = await MerchantEntity.updateMerchant(merchant.id, {
-      walletAddress,
-    });
+    // Check not taken
+    const exists = await MerchantEntity.getMerchantByWallet(walletAddress);
+    if (exists && exists.id !== merchant.id) {
+      return CheckDBResponse.errorResponse("Wallet address already registered");
+    }
 
+    const updated = await MerchantEntity.updateMerchant(merchant.id, { walletAddress });
     return CheckDBResponse.successResponse(updated);
   } catch (error) {
     console.log(error);
@@ -108,11 +175,7 @@ exports.updateWebhookConfig = async (userId, webhookUrl) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
-    const updated = await MerchantEntity.updateMerchant(merchant.id, {
-      webhookUrl,
-    });
-
+    const updated = await MerchantEntity.updateMerchant(merchant.id, { webhookUrl });
     return CheckDBResponse.successResponse(updated);
   } catch (error) {
     console.log(error);
@@ -126,7 +189,6 @@ exports.generateApiKeys = async (userId, environment = "live") => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
     const keys = await ApiKeyEntity.generateKeyPair(merchant.id, environment);
     return CheckDBResponse.successResponse(keys);
   } catch (error) {
@@ -141,8 +203,7 @@ exports.listApiKeys = async (userId) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
-    const keys = await ApiKeyEntity.getKeysByMerchant(merchant.id);
+    const keys = await ApiKeyEntity.getKeysByMerchantId(merchant.id);
     return CheckDBResponse.successResponse(keys);
   } catch (error) {
     console.log(error);
@@ -156,12 +217,8 @@ exports.revokeApiKey = async (userId, keyId) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
-    const result = await ApiKeyEntity.revokeKey(keyId, merchant.id);
-    if (result.success === false) {
-      return CheckDBResponse.errorResponse(result.error);
-    }
-    return CheckDBResponse.successResponse(result);
+    await ApiKeyEntity.revokeKey(keyId, merchant.id);
+    return CheckDBResponse.successResponse({ revoked: true });
   } catch (error) {
     console.log(error);
     return CheckDBResponse.errorResponse(error);
@@ -174,20 +231,17 @@ exports.getDashboardStats = async (userId) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-
-    const { TransactionEntity, SubscriptionEntity } = require("../../database/classes");
-
+    const { TransactionEntity } = require("../../database/classes");
     const txStats = await TransactionEntity.getMerchantStats(merchant.id);
     const { Subscription } = require("../../database/models");
     const activeSubs = await Subscription.count({
       where: { merchantId: merchant.id, status: "active" },
     });
-
     return CheckDBResponse.successResponse({
-      totalTransactions: Number(txStats?.totalTransactions || 0),
-      totalVolume: Number(txStats?.totalVolume || 0),
-      totalFees: Number(txStats?.totalFees || 0),
+      ...(txStats || {}),
       activeSubscriptions: activeSubs,
+      merchantId: merchant.id,
+      onChainId: merchant.onChainId,
     });
   } catch (error) {
     console.log(error);
@@ -195,11 +249,10 @@ exports.getDashboardStats = async (userId) => {
   }
 };
 
-// Admin functions
 exports.getAllMerchants = async (page, size) => {
   try {
-    const merchants = await MerchantEntity.getAllMerchants(page, size);
-    return CheckDBResponse.response(merchants);
+    const result = await MerchantEntity.getAllMerchants(page, size);
+    return CheckDBResponse.successResponse(result);
   } catch (error) {
     console.log(error);
     return CheckDBResponse.errorResponse(error);
@@ -208,9 +261,6 @@ exports.getAllMerchants = async (page, size) => {
 
 exports.setCustomFee = async (merchantId, feeBps) => {
   try {
-    if (feeBps > 500) {
-      return CheckDBResponse.errorResponse("Fee cannot exceed 5% (500 bps)");
-    }
     const updated = await MerchantEntity.updateMerchant(merchantId, {
       customFeeBps: feeBps,
     });
