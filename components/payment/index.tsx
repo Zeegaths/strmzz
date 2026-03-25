@@ -14,9 +14,9 @@ import logo from '@/public/logo/blueLogo.png'
 import usdcIcon from '@/public/brands/USDC.svg'
 import usdtIcon from '@/public/brands/USDT.svg'
 import ConfirmedStep from './ConfirmedStep'
-import { FiAlertTriangle, FiCheck, FiLoader} from 'react-icons/fi'
+import { FiAlertTriangle, FiCheck, FiLoader } from 'react-icons/fi'
 import { Wallet } from 'lucide-react'
- 
+
 const CheckoutPage = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -182,6 +182,11 @@ const CheckoutPage = () => {
   const handlePay = useCallback(() => {
     if (!session || !address) return
     setTxError(null)
+
+    if (!session.merchantOnChainId) {
+      setTxError('Merchant on-chain setup incomplete. Contact merchant support.')
+      return
+    }
 
     if (session.type === 'one_time') {
       writePay({
@@ -444,16 +449,14 @@ const CheckoutPage = () => {
 
                 {/* Step indicator */}
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-[600] ${
-                    step === 'approve' ? 'bg-accent text-white' : 'bg-accent/10 text-accent'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-[600] ${step === 'approve' ? 'bg-accent text-white' : 'bg-accent/10 text-accent'
+                    }`}>
                     {step === 'pay' ? <FiCheck className="w-4 h-4" /> : '1'}
                   </div>
                   <span className="font-poppins text-sm text-[#58556A]">Approve {session?.currency}</span>
                   <div className="flex-1 h-[1px] bg-[#E5E7EB]" />
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-[600] ${
-                    step === 'pay' ? 'bg-accent text-white' : 'bg-[#E5E7EB] text-[#9CA3AF]'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-[600] ${step === 'pay' ? 'bg-accent text-white' : 'bg-[#E5E7EB] text-[#9CA3AF]'
+                    }`}>
                     2
                   </div>
                   <span className="font-poppins text-sm text-[#58556A]">Pay</span>
@@ -464,11 +467,10 @@ const CheckoutPage = () => {
                   <button
                     onClick={handleApprove}
                     disabled={isApproving || hasInsufficientBalance}
-                    className={`w-full h-[44px] flex justify-center items-center rounded-[8px] font-poppins font-[500] text-[14px] transition-opacity ${
-                      isApproving || hasInsufficientBalance
+                    className={`w-full h-[44px] flex justify-center items-center rounded-[8px] font-poppins font-[500] text-[14px] transition-opacity ${isApproving || hasInsufficientBalance
                         ? 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed'
                         : 'bg-accent text-white hover:opacity-90'
-                    }`}
+                      }`}
                   >
                     {isApproving ? (
                       <span className="flex items-center gap-2">
@@ -485,11 +487,10 @@ const CheckoutPage = () => {
                   <button
                     onClick={handlePay}
                     disabled={isPaying || hasInsufficientBalance}
-                    className={`w-full h-[44px] flex justify-center items-center rounded-[8px] font-poppins font-[500] text-[14px] transition-opacity ${
-                      isPaying || hasInsufficientBalance
+                    className={`w-full h-[44px] flex justify-center items-center rounded-[8px] font-poppins font-[500] text-[14px] transition-opacity ${isPaying || hasInsufficientBalance
                         ? 'bg-[#E5E7EB] text-[#9CA3AF] cursor-not-allowed'
                         : 'bg-accent text-white hover:opacity-90'
-                    }`}
+                      }`}
                   >
                     {isPaying ? (
                       <span className="flex items-center gap-2">
