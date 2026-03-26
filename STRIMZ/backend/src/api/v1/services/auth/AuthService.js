@@ -38,7 +38,7 @@ const GenerateToken = async (uid) => {
 
 exports.signUp = async (data) => {
   try {
-    const newUser = await User.createUser(data);
+    const newUser = await User.createUser({ ...data, type: data.type ?? "eth" });
 
     // const accessToken = await GenerateToken(newUser.id);
     // newUser.dataValues.accessToken = accessToken;
