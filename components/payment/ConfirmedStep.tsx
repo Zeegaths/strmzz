@@ -43,7 +43,7 @@ const ConfirmedStep = ({ successUrl, sessionId, txHash }: ConfirmedStepProps) =>
   }, [successUrl, sessionId, txHash, countdown])
 
   const explorerUrl = txHash
-    ? `https://basescan.org/tx/${txHash}`
+    ? `https://sepolia.basescan.org/tx/${txHash}`
     : null
 
   return (
