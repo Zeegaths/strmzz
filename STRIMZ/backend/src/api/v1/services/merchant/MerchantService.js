@@ -203,7 +203,7 @@ exports.listApiKeys = async (userId) => {
     if (!merchant) {
       return CheckDBResponse.errorResponse("Merchant account not found");
     }
-    const keys = await ApiKeyEntity.getKeysByMerchantId(merchant.id);
+    const keys = await ApiKeyEntity.getKeysByMerchant(merchant.id);
     return CheckDBResponse.successResponse(keys);
   } catch (error) {
     console.log(error);
