@@ -41,6 +41,7 @@ const BizDropdown: React.FC = () => {
 
     const handleLogout = () => {
         localStorage.removeItem("strimzUser");
+        localStorage.removeItem("strimz_token");
         router.push("/login")
     }
 
@@ -61,13 +62,13 @@ const BizDropdown: React.FC = () => {
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/business">
+                        <Link href="/docs">
                             <CgFileDocument />
                             <span>Documentation</span>
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                        <Link href="/business/help">
+                        <Link href="#">
                             <IoIosHelpCircleOutline />
                             <span>Help</span>
                         </Link>
