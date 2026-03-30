@@ -1,26 +1,26 @@
-const { Resend } = require("resend");
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,      // your gmail
+    pass: process.env.EMAIL_APP_PASSWORD  // app password, not your real password
+  }
+});
 
 exports.sendMail = async (receiver, text, html, subject) => {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Strimz <onboarding@resend.dev>",
-      to: [receiver],
-      subject: subject ?? "Email Verification",
+    const info = await transporter.sendMail({
+      from: `Strimz <${process.env.EMAIL_USER}>`,
+      to: receiver,
+      subject: subject ?? 'Email Verification',
       html: html || undefined,
       text: text || undefined,
     });
-
-    if (error) {
-      console.error("[Email] Resend error:", error);
-      return { success: false };
-    }
-
-    console.log("[Email] Sent to", receiver, "id:", data?.id);
+    console.log('[Email] Sent to', receiver, 'id:', info.messageId);
     return { success: true };
   } catch (error) {
-    console.error("[Email] Send failed:", error);
+    console.error('[Email] Send failed:', error);
     return { success: false };
   }
 };
