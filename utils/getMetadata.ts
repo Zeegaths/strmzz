@@ -162,7 +162,11 @@ export const getMetadata = ({
           sizes: "512x512",
           type: "image/png",
         },
+
       ],
+    },
+    other: {
+      'base:app_id': '69cd01ea19afd75ffc3d3af7',
     },
   };
 };
