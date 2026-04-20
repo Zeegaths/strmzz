@@ -63,11 +63,34 @@ export const ERC20_ABI = [
   },
 ] as const
 
+export const MERCHANT_REGISTRATION_ABI = [
+  {
+    name: 'registerMerchant',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'wallet', type: 'address' },
+      { name: 'name', type: 'string' },
+    ],
+    outputs: [{ name: 'merchantId', type: 'bytes32' }],
+  },
+] as const
+
 // ============================================================================
 // StrimzPayments ABI (pay + createSubscription only)
 // ============================================================================
 
 export const STRIMZ_PAYMENTS_ABI = [
+  {
+    name: 'registerMerchant',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'wallet', type: 'address' },
+      { name: 'name', type: 'string' },
+    ],
+    outputs: [{ name: 'merchantId', type: 'bytes32' }],
+  },
   {
     name: 'pay',
     type: 'function',
@@ -77,6 +100,7 @@ export const STRIMZ_PAYMENTS_ABI = [
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
       { name: 'preference', type: 'string' },
+      { name: 'minAmountOut', type: 'uint256' },
     ],
     outputs: [{ name: 'paymentId', type: 'bytes32' }],
   },
@@ -89,8 +113,30 @@ export const STRIMZ_PAYMENTS_ABI = [
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
       { name: 'interval', type: 'uint8' },
+      { name: 'autoCharge', type: 'bool' },
     ],
     outputs: [{ name: 'subscriptionId', type: 'bytes32' }],
+  },
+  {
+    name: 'getMerchantDetails',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'merchantId', type: 'bytes32' },
+    ],
+    outputs: [
+      {
+        type: 'tuple',
+        components: [
+          { name: 'wallet', type: 'address' },
+          { name: 'name', type: 'string' },
+          { name: 'active', type: 'bool' },
+          { name: 'totalVolume', type: 'uint256' },
+          { name: 'customFeeBps', type: 'uint256' },
+          { name: 'registeredAt', type: 'uint256' },
+        ],
+      },
+    ],
   },
 ] as const
 

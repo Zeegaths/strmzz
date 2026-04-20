@@ -3,12 +3,23 @@ import React, { useState, useMemo } from 'react'
 import { IoFilterSharp, IoSearchOutline } from 'react-icons/io5'
 import FilterDropdown from './FilterDropdown'
 import TransactionTable from './TransactionTable'
-import { sampleTransactions } from '@/utils/sampleTransactionData'
-import { FilterState, Transaction } from '@/types/transactions'
+import { FilterState, TransactionRow, transformTransaction } from '@/types/transactions'
 import { FILTER_OPTIONS } from './constants'
+import { useMerchantTransactions } from '@/app/providers/Web3Provider'
 
 const TransactionBusinessDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(0)
+    const pageSize = 20
+    
+    const { data: txResponse, isLoading, error } = useMerchantTransactions(currentPage, pageSize)
+    
+    const transactions = useMemo(() => {
+        if (!txResponse) return []
+        const rows = (txResponse as any)?.rows || txResponse || []
+        return rows.map(transformTransaction)
+    }, [txResponse])
+
     const [filters, setFilters] = useState<FilterState>({
         token: [],
         status: [],
@@ -17,37 +28,31 @@ const TransactionBusinessDashboard = () => {
         timeperiod: ''
     })
 
-    // Filter transactions
     const filteredTransactions = useMemo(() => {
-        return sampleTransactions.filter((transaction: Transaction) => {
-            // Search filter
+        return transactions.filter((transaction: TransactionRow) => {
             const matchesSearch =
                 searchQuery === '' ||
                 transaction.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Token filter
             const matchesToken =
                 filters.token.length === 0 ||
                 filters.token.includes(transaction.token)
 
-            // Status filter
             const matchesStatus =
                 filters.status.length === 0 ||
                 filters.status.includes(transaction.status)
 
-            // Frequency filter
             const matchesFrequency =
                 filters.frequency.length === 0 ||
                 filters.frequency.includes(transaction.frequency)
 
-            // Paid via filter
             const matchesPaidVia =
                 filters.paidVia.length === 0 ||
                 filters.paidVia.includes(transaction.paidVia)
 
             return matchesSearch && matchesToken && matchesStatus && matchesFrequency && matchesPaidVia
         })
-    }, [searchQuery, filters])
+    }, [searchQuery, filters, transactions])
 
     return (
         <section className="w-full flex flex-col gap-4">

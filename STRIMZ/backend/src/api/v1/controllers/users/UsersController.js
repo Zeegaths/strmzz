@@ -249,3 +249,35 @@ exports.searchUser = async (req, res, next) => {
     return MessageResponse.errorResponse(res, "server error", 500, error);
   }
 };
+
+exports.getUserDashboard = async (req, res, next) => {
+  const userId = req.user.uid;
+
+  try {
+    const dashboard = await UsersService.getUserDashboard(userId);
+    const { success, ...result } = dashboard;
+    if (success) {
+      MessageResponse.successResponse(
+        res,
+        "User Dashboard",
+        200,
+        result.data
+      );
+    } else {
+      MessageResponse.errorResponse(
+        res,
+        "not found",
+        404,
+        result.error
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    MessageResponse.errorResponse(
+      res,
+      "internal server error",
+      500,
+      error.message
+    );
+  }
+};

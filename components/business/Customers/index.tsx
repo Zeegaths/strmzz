@@ -3,46 +3,52 @@ import React, { useState, useMemo } from 'react'
 import { IoFilterSharp, IoSearchOutline } from 'react-icons/io5'
 import FilterDropdown from './FilterDropdown'
 import CustomerTable from './CustomerTable'
-import { sampleCustomers } from '@/utils/sampleCustomerData'
-import { CustomerFilterState, Customer } from '@/types/customers'
+import { CustomerFilterState, Customer, transformCustomer, ApiCustomer } from '@/types/customers'
 import { CUSTOMER_FILTER_OPTIONS } from './constants'
 import { matchesTotalSpentRange, matchesLastPaymentPeriod } from './utils'
+import { useMerchantCustomers } from '@/app/providers/Web3Provider'
 
 const CustomersBusinessDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(0)
+    const pageSize = 20
+    
+    const { data: customersResponse, isLoading, error } = useMerchantCustomers(currentPage, pageSize)
+    
+    const customers = useMemo(() => {
+        if (!customersResponse) return []
+        const rows = (customersResponse as any)?.rows || customersResponse || []
+        return rows.map(transformCustomer)
+    }, [customersResponse])
+
     const [filters, setFilters] = useState<CustomerFilterState>({
         totalSpent: [],
         frequency: [],
         lastPayment: [],
     })
 
-    // Filter customers
     const filteredCustomers = useMemo(() => {
-        return sampleCustomers.filter((customer: Customer) => {
-            // Search filter
+        return customers.filter((customer: Customer) => {
             const matchesSearch =
                 searchQuery === '' ||
                 customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 customer.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-            // Total spent filter
             const matchesTotalSpent =
                 filters.totalSpent.length === 0 ||
                 filters.totalSpent.some(range => matchesTotalSpentRange(customer.totalSpent, range))
 
-            // Frequency filter
             const matchesFrequency =
                 filters.frequency.length === 0 ||
                 filters.frequency.includes(customer.frequency)
 
-            // Last payment filter
             const matchesLastPayment =
                 filters.lastPayment.length === 0 ||
                 filters.lastPayment.some(period => matchesLastPaymentPeriod(customer.lastPayment, period))
 
             return matchesSearch && matchesTotalSpent && matchesFrequency && matchesLastPayment
         })
-    }, [searchQuery, filters])
+    }, [searchQuery, filters, customers])
 
     return (
         <section className="w-full flex flex-col gap-4">

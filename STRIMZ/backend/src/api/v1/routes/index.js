@@ -11,6 +11,7 @@ const PlanRoute = require("./plan/PlanRoute");
 const MerchantRoute = require("./merchant/MerchantRoute");
 const PaymentRoute = require("./payment/PaymentRoute");
 const SubscriptionRoute = require("./subscription/SubscriptionRoute");
+const WebhookRoute = require("./webhook/WebhookRoute");
 
 // Existing
 router.use("/auth", AuthRoute);
@@ -23,5 +24,6 @@ router.use("/plan", PlanRoute);
 router.use("/merchants", MerchantRoute);
 router.use("/payments", PaymentRoute);
 router.use("/subscriptions", SubscriptionRoute);
+router.use("/webhooks", WebhookRoute);
 
 module.exports = router;

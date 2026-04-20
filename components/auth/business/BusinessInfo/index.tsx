@@ -6,6 +6,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { injected } from 'wagmi/connectors';
+import { Wallet } from 'lucide-react';
 import AuthFormContainer from '@/components/auth/shared/AuthFormContainer';
 import FormInput from '@/components/auth/shared/FormInput';
 import SubmitButton from '@/components/auth/shared/SubmitButton';
@@ -18,10 +21,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { apiFetch, apiGet } from '@/lib/api';
+import { ACTIVE_CHAIN_ID } from '@/config/wagmi';
 
-/**
- * Business types for selection
- */
 const businessTypes = [
     { value: 'online_retail', label: 'Online Store/Retail' },
     { value: 'services_saas', label: 'Services/Freelance/SaaS' },
@@ -48,7 +49,33 @@ type MerchantSetupInput = z.infer<typeof merchantSetupSchema>;
 const BusinessInfoSettings = () => {
     const router = useRouter();
 
-    // Check if merchant already exists — redirect to dashboard
+    const { address, isConnected, chain } = useAccount();
+    const { connect, isPending: isConnecting } = useConnect();
+    const { disconnect } = useDisconnect();
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        watch,
+        formState: { errors, isSubmitting, isValid, isDirty },
+    } = useForm<MerchantSetupInput>({
+        resolver: zodResolver(merchantSetupSchema),
+        mode: 'onChange',
+        defaultValues: {
+            walletAddress: '',
+        },
+    });
+
+    const walletAddress = watch('walletAddress');
+
+    useEffect(() => {
+        if (address && isConnected) {
+            setValue('walletAddress', address, { shouldValidate: true });
+        }
+    }, [address, isConnected, setValue]);
+
     useEffect(() => {
         const checkMerchant = async () => {
             try {
@@ -61,19 +88,17 @@ const BusinessInfoSettings = () => {
         checkMerchant();
     }, [router]);
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        formState: { errors, isSubmitting, isValid, isDirty },
-    } = useForm<MerchantSetupInput>({
-        resolver: zodResolver(merchantSetupSchema),
-        mode: 'onChange',
-    });
+    const handleConnectWallet = () => {
+        connect({ connector: injected(), chainId: ACTIVE_CHAIN_ID });
+    };
+
+    const handleDisconnect = () => {
+        disconnect();
+        setValue('walletAddress', '', { shouldValidate: true });
+    };
 
     const onSubmit = async (data: MerchantSetupInput) => {
         try {
-            // Get stored user email
             const storedUser = localStorage.getItem('strimz_user');
             const user = storedUser ? JSON.parse(storedUser) : null;
             const email = user?.email || '';
@@ -97,7 +122,6 @@ const BusinessInfoSettings = () => {
 
             const resData = res.data || res.message;
 
-            // Save API keys info if returned
             if (resData?.keys) {
                 localStorage.setItem('strimz_merchant_keys', JSON.stringify(resData.keys));
             }
@@ -188,17 +212,67 @@ const BusinessInfoSettings = () => {
                     )}
                 </div>
 
-                <FormInput
-                    label="Settlement Wallet Address"
-                    id="walletAddress"
-                    type="text"
-                    placeholder="0x..."
-                    register={register('walletAddress')}
-                    error={errors.walletAddress?.message}
-                />
-                <p className="font-poppins text-[11px] text-[#9CA3AF] -mt-2">
-                    This is where you&apos;ll receive USDC payments. Use a wallet you control on Base.
-                </p>
+                <div className="flex flex-col gap-1">
+                    <label
+                        htmlFor="walletAddress"
+                        className="font-poppins text-[14px] font-[500] text-[#1A1A2E] leading-[24px]"
+                    >
+                        Settlement Wallet Address
+                    </label>
+                    {isConnected ? (
+                        <div className="w-full flex items-center gap-2">
+                            <div className="flex-1 h-[48px] px-4 rounded-[8px] border border-[#E5E7EB] bg-[#F0FDF4] flex items-center">
+                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                                <span className="font-mono text-[14px] text-[#1A1A2E] truncate">
+                                    {address}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleDisconnect}
+                                className="h-[48px] px-4 rounded-[8px] border border-[#E5E7EB] bg-white hover:bg-red-50 hover:border-red-200 text-[#58556A] hover:text-red-600 transition-colors text-sm font-poppins flex items-center gap-2"
+                            >
+                                Disconnect
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                placeholder="0x..."
+                                {...register('walletAddress')}
+                                className="flex-1 h-[48px] px-4 rounded-[8px] border border-[#E5E7EB] bg-white font-mono text-[14px] text-[#1A1A2E] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleConnectWallet}
+                                disabled={isConnecting}
+                                className="h-[48px] px-4 rounded-[8px] bg-accent hover:bg-accent/90 disabled:bg-accent/50 text-white transition-colors text-sm font-poppins font-[500] flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <Wallet className="w-4 h-4" />
+                                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                            </button>
+                        </div>
+                    )}
+                    {errors.walletAddress && (
+                        <p className="font-poppins text-[12px] text-red-500">
+                            {errors.walletAddress.message}
+                        </p>
+                    )}
+                    {chain && chain.id !== ACTIVE_CHAIN_ID && (
+                        <p className="font-poppins text-[12px] text-yellow-600 mt-1">
+                            Please switch to Base network in your wallet
+                        </p>
+                    )}
+                    <p className="font-poppins text-[11px] text-[#9CA3AF] mt-1">
+                        This is where you&apos;ll receive USDC payments.{' '}
+                        {isConnected ? (
+                            <span className="text-green-600 font-medium">Wallet connected.</span>
+                        ) : (
+                            <span>Make sure you can connect this wallet if needed.</span>
+                        )}
+                    </p>
+                </div>
 
                 <SubmitButton
                     isSubmitting={isSubmitting}

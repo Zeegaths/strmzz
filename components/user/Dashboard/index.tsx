@@ -12,6 +12,15 @@ import baseIcon from "@/public/networks/base.webp"
 import { IoCopyOutline } from 'react-icons/io5'
 import { toast } from 'sonner'
 import Bills from './bills'
+import { useAccount } from 'wagmi'
+import { useReadContract } from 'wagmi'
+import { formatUnits } from 'viem'
+import { ERC20_ABI, CONTRACTS, TOKEN_DECIMALS } from '@/config/contracts'
+import { base, celo } from 'wagmi/chains'
+import { useConnect, useChainId } from 'wagmi'
+import { injected } from 'wagmi/connectors'
+import celoIcon from "@/public/networks/celo.png"
+
 
 /**
  * UserDashboardHome component renders the main dashboard interface for the user.
@@ -30,18 +39,14 @@ import Bills from './bills'
  */
 
 const UserDashboardHome = () => {
-    const [user, setUser] = useState<{ address?: `0x${string}` }>({});
+    const { connect } = useConnect()
+    const chainId = useChainId()
 
-    useEffect(() => {
-        const data = window.localStorage.getItem("strimzUser");
-        const parsedUser = data ? JSON.parse(data) : { address: "0xbe03CE9d6001D27BE41fc87e3E3f777d04e70Fe2" };
-        setUser(parsedUser);
-    }, []);
+    const { address } = useAccount()
 
     const shortenAddress = useMemo(() => {
-        return user?.address ? `${user?.address.slice(0, 8)}...${user?.address.slice(-6)}` : "";
-    }, [user?.address]);
-
+        return address ? `${address.slice(0, 8)}...${address.slice(-6)}` : "Not connected"
+    }, [address])
 
     // async function clipboard copy
     const copyTextToClipboard = async (text: any) => {
@@ -52,19 +57,45 @@ const UserDashboardHome = () => {
         }
     }
 
+    const networkIcon = chainId === celo.id ? celoIcon : baseIcon
+    const networkName = chainId === celo.id ? 'Celo' : 'Base'
+
     //handle copy to clipboard
     const handleCopy = () => {
-        copyTextToClipboard(user?.address).then(() => {
-            toast.success("Wallet address copied to clipboard", {
-                position: "top-right",
-            })
-        }).catch((err) => {
-            console.log(err);
-            toast.error("Failed to copy wallet address", {
-                position: "top-right",
-            })
-        });
+        if (!address) return
+        copyTextToClipboard(address).then(() => {
+            toast.success("Wallet address copied to clipboard")
+        }).catch(() => {
+            toast.error("Failed to copy wallet address")
+        })
     }
+
+    // USDC balance
+    const { data: usdcBalance } = useReadContract({
+        address: CONTRACTS.USDC,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    })
+
+    // USDT balance
+    const { data: usdtBalance } = useReadContract({
+        address: CONTRACTS.USDT,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    })
+
+    const formattedUsdc = usdcBalance
+        ? parseFloat(formatUnits(usdcBalance as bigint, TOKEN_DECIMALS)).toFixed(2)
+        : '0.00'
+
+    const formattedUsdt = usdtBalance
+        ? parseFloat(formatUnits(usdtBalance as bigint, TOKEN_DECIMALS)).toFixed(2)
+        : '0.00'
+
 
     return (
         <section className="w-full flex flex-col gap-3">
@@ -83,7 +114,7 @@ const UserDashboardHome = () => {
                                 </span>
                                 usdc
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 0</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl">${formattedUsdc}</h3>
                         </div>
 
                         {/* USDT */}
@@ -94,7 +125,7 @@ const UserDashboardHome = () => {
                                 </span>
                                 usdt
                             </span>
-                            <h3 className="text-black font-[600] font-sora text-xl text-wrap">$ 0</h3>
+                            <h3 className="text-black font-[600] font-sora text-xl">${formattedUsdt}</h3>
                         </div>
 
                         {/* Total Payout */}
@@ -112,7 +143,7 @@ const UserDashboardHome = () => {
                     <div className="flex gap-4 mt-6 ">
                         <div className="flex gap-1.5 items-center">
                             <span className="text-[14px] capitalize text-[#58556A] font-poppins font-[500]">Wallet Address:</span>
-                            <Image src={baseIcon} alt="Base Icon" className='w-4 h-4' width={16} height={16} quality={100} priority />
+                            <Image src={networkIcon} alt={networkName} className='w-4 h-4' width={16} height={16} quality={100} priority />
                             <p className="text-base capitalize text-[#58556A] font-poppins font-[400]">{shortenAddress}</p>
                             <button type="button" onClick={handleCopy} className="text-[#58556A]">
                                 <IoCopyOutline className="w-4 h-4" />
@@ -128,7 +159,7 @@ const UserDashboardHome = () => {
             </main>
 
             <Bills />
-
+          
             <TransactionSummary />
         </section>
     )

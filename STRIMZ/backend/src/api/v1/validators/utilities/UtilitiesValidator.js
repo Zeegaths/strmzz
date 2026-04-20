@@ -91,10 +91,7 @@ exports.purchase = [
           throw new Error("Billers code required");
         }
         if (!variation_code) {
-          throw new Error("Variation code required");
-        }
-        if (variation_code !== "prepaid" || variation_code !== "postpaid") {
-          throw new Error("Variation code required");
+          throw new Error("Variation code required (prepaid or postpaid)");
         }
       } else {
         throw new Error("Invalid service type");
@@ -143,12 +140,8 @@ exports.verify = [
         if (!billersCode) {
           throw new Error("Billers code required");
         }
-        if (
-          !req.body.type ||
-          req.body.type !== "prepaid" ||
-          req.body.type !== "postpaid"
-        ) {
-          throw new Error("Invalid type");
+        if (!req.body.variation_code) {
+          throw new Error("Variation code required (prepaid or postpaid)");
         }
       } else {
         throw new Error("Invalid service type");

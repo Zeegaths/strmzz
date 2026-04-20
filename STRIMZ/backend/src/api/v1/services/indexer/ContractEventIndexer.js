@@ -13,7 +13,7 @@ const STRIMZ_PAYMENTS_ABI = [
   "event SubscriptionCreated(bytes32 indexed subscriptionId, address indexed subscriber, bytes32 indexed merchantId, uint256 amount, uint8 interval)",
   "event SubscriptionCharged(bytes32 indexed subscriptionId, bytes32 indexed paymentId, uint256 amount)",
   "event SubscriptionStatusChanged(bytes32 indexed subscriptionId, uint8 status)",
-  "function batchChargeSubscriptions(bytes32[] calldata subscriptionIds) external",
+  "function batchChargeSubscriptions(bytes32[] calldata subscriptionIds, uint256 minAmountOut) external",
   "function isSubscriptionDue(bytes32 subscriptionId) external view returns (bool)",
 ];
 

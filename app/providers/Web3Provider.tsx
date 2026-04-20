@@ -167,3 +167,74 @@ export function useUpdateWallet() {
     },
   })
 }
+
+// ============================================================================
+// User Subscriptions (JWT auth)
+// ============================================================================
+
+export function useUserSubscriptions(page = 0, size = 10) {
+  return useQuery({
+    queryKey: ['user', 'subscriptions', page, size],
+    queryFn: async () => {
+      const res = await apiGet(`/subscriptions/me?page=${page}&size=${size}`)
+      if (!res.success) throw new Error(res.error)
+      return res.data
+    },
+  })
+}
+
+export function useUserSubscription(subscriptionId: string) {
+  return useQuery({
+    queryKey: ['user', 'subscription', subscriptionId],
+    queryFn: async () => {
+      const res = await apiGet(`/subscriptions/me/${subscriptionId}`)
+      if (!res.success) throw new Error(res.error)
+      return res.data
+    },
+  })
+}
+
+export function usePauseSubscription() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const res = await apiPost(`/subscriptions/me/${subscriptionId}/pause`, {})
+      if (!res.success) throw new Error(res.error)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'subscriptions'] })
+    },
+  })
+}
+
+export function useResumeSubscription() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const res = await apiPost(`/subscriptions/me/${subscriptionId}/resume`, {})
+      if (!res.success) throw new Error(res.error)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'subscriptions'] })
+    },
+  })
+}
+
+export function useCancelSubscription() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (subscriptionId: string) => {
+      const res = await apiPost(`/subscriptions/me/${subscriptionId}/cancel`, {})
+      if (!res.success) throw new Error(res.error)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'subscriptions'] })
+    },
+  })
+}

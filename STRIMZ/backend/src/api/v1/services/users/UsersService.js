@@ -1,5 +1,5 @@
 const { CheckDBResponse } = require("../../helpers");
-const { User } = require("../../database/classes");
+const { User, Transaction, Subscription, PaymentSession, Payroll } = require("../../database/classes");
 const { errorResponse } = require("../../helpers/messages/CheckDBStatus");
 
 //add a new Partner
@@ -66,5 +66,54 @@ exports.deleteUser = async (id) => {
   } catch (error) {
     console.log(error);
     CheckDBResponse.errorResponse(error);
+  }
+};
+
+exports.getUserDashboard = async (userId) => {
+  try {
+    const user = await User.getUserById(userId);
+    if (!user || user.success === false) {
+      return { success: false, error: "User not found" };
+    }
+
+    const userAddress = user.address;
+
+    const transactions = await Transaction.findAll({
+      where: { payer: userAddress },
+      limit: 10,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const subscriptions = await Subscription.findAll({
+      where: { subscriber: userAddress },
+      limit: 10,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const paymentSessions = await PaymentSession.findAll({
+      where: { customerEmail: user.email },
+      limit: 10,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const payrolls = await Payroll.findAll({
+      where: { owner: userAddress },
+      limit: 10,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return {
+      success: true,
+      data: {
+        profile: user,
+        transactions: transactions.map(t => t.toJSON()),
+        subscriptions: subscriptions.map(s => s.toJSON()),
+        paymentSessions: paymentSessions.map(p => p.toJSON()),
+        payrolls: payrolls.map(p => p.toJSON()),
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    return { success: false, error: error.message };
   }
 };

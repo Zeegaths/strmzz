@@ -197,7 +197,8 @@ const CheckoutPage = () => {
           session.merchantOnChainId as `0x${string}`,
           tokenAddress,
           amountRaw,
-          session.sessionId, // Use sessionId as on-chain reference
+          session.sessionId,
+          BigInt(0),
         ],
         chainId: ACTIVE_CHAIN_ID,
       })
@@ -212,6 +213,7 @@ const CheckoutPage = () => {
           tokenAddress,
           amountRaw,
           intervalEnum,
+          false,
         ],
         chainId: ACTIVE_CHAIN_ID,
       })

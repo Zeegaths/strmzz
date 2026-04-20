@@ -15,6 +15,7 @@ router.get(
 router.get("/name/:query", pagination, VerifyToken, UserController.searchUser);
 router.get("/:id", VerifyToken, UserValidator.getUser, UserController.getUser);
 router.put("/", VerifyToken, UserController.updateUser);
+router.get("/dashboard", VerifyToken, UserController.getUserDashboard);
 router.put(
   "/block",
   VerifyToken,

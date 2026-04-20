@@ -11,7 +11,7 @@ const { ethers } = require("ethers");
 // ============================================================================
 
 const STRIMZ_ABI = [
-  "function registerMerchant(address wallet, string name) external returns (bytes32)",
+  "function registerMerchantFor(address wallet, string name) external returns (bytes32)",
   "event MerchantRegistered(bytes32 indexed merchantId, address indexed wallet, string name)",
 ];
 
@@ -32,7 +32,7 @@ async function registerMerchantOnChain(walletAddress, name) {
 
     console.log(`[OnChain] Registering merchant ${name} (${walletAddress})...`);
 
-    const tx = await contract.registerMerchant(walletAddress, name);
+    const tx = await contract.registerMerchantFor(walletAddress, name);
     const receipt = await tx.wait();
 
     // Extract merchantId from event logs

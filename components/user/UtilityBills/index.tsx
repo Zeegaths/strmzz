@@ -5,11 +5,15 @@ import DataForm from './DataForm'
 import CableTvForm from './CableTvForm'
 import ElectricityForm from './ElectricityForm'
 import SuccessState from './SuccessState'
+import { useSearchParams } from 'next/navigation'
 
 type UtilityType = 'airtime' | 'data' | 'cable' | 'electricity'
 
 const UtilityBills = () => {
-    const [activeTab, setActiveTab] = useState<UtilityType>('airtime')
+
+    const searchParams = useSearchParams()
+    const tabFromUrl = searchParams.get('tab') as UtilityType | null
+    const [activeTab, setActiveTab] = useState<UtilityType>(tabFromUrl || 'airtime')
     const [showSuccess, setShowSuccess] = useState(false)
 
     const handleSuccess = () => {
@@ -49,11 +53,10 @@ const UtilityBills = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 py-2.5 px-4 rounded-[8px] font-poppins font-[500] text-sm transition-all ${
-                                activeTab === tab.id
+                            className={`flex-1 py-2.5 px-4 rounded-[8px] font-poppins font-[500] text-sm transition-all ${activeTab === tab.id
                                     ? 'bg-white text-black shadow-sm'
                                     : 'bg-transparent text-[#58556A] hover:text-black'
-                            }`}
+                                }`}
                         >
                             {tab.label}
                         </button>
